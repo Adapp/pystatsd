@@ -77,22 +77,22 @@ class StatsClientBase(object):
     def pipeline(self):
         pass
 
-    def timer(self, stat, rate=1):
-        return Timer(self, stat, rate)
+    def timer(self, stat, rate=1, tags=[]):
+        return Timer(self, stat, rate, tags, tags)
 
-    def timing(self, stat, delta, rate=1):
+    def timing(self, stat, delta, rate=1, tags=[]):
         """Send new timing information. `delta` is in milliseconds."""
-        self._send_stat(stat, '%0.6f|ms' % delta, rate)
+        self._send_stat(stat, '%0.6f|ms' % delta, rate, tags=[])
 
-    def incr(self, stat, count=1, rate=1):
+    def incr(self, stat, count=1, rate=1, tags=[]):
         """Increment a stat by `count`."""
-        self._send_stat(stat, '%s|c' % count, rate)
+        self._send_stat(stat, '%s|c' % count, rate, tags)
 
-    def decr(self, stat, count=1, rate=1):
+    def decr(self, stat, count=1, rate=1, tags=[]):
         """Decrement a stat by `count`."""
-        self.incr(stat, -count, rate)
+        self.incr(stat, -count, rate, tags)
 
-    def gauge(self, stat, value, rate=1, delta=False):
+    def gauge(self, stat, value, rate=1, delta=False, tags=[]):
         """Set a gauge value."""
         if value < 0 and not delta:
             if rate < 1:
@@ -103,16 +103,16 @@ class StatsClientBase(object):
                 pipe._send_stat(stat, '%s|g' % value, 1)
         else:
             prefix = '+' if delta and value >= 0 else ''
-            self._send_stat(stat, '%s%s|g' % (prefix, value), rate)
+            self._send_stat(stat, '%s%s|g' % (prefix, value), rate, tags)
 
-    def set(self, stat, value, rate=1):
+    def set(self, stat, value, rate=1, tags=[]):
         """Set a set value."""
-        self._send_stat(stat, '%s|s' % value, rate)
+        self._send_stat(stat, '%s|s' % value, rate, tags)
 
-    def _send_stat(self, stat, value, rate):
-        self._after(self._prepare(stat, value, rate))
+    def _send_stat(self, stat, value, rate, tags):
+        self._after(self._prepare(stat, value, rate, tags))
 
-    def _prepare(self, stat, value, rate):
+    def _prepare(self, stat, value, rate, tags):
         if rate < 1:
             if random.random() > rate:
                 return
@@ -120,6 +120,10 @@ class StatsClientBase(object):
 
         if self._prefix:
             stat = '%s.%s' % (self._prefix, stat)
+
+        if len(tags) > 0:
+            metadata = ','.join(map(str, tags))
+            stat = '%s|#%s' % (stat, metadata)
 
         return '%s:%s' % (stat, value)
 
