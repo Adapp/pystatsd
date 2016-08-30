@@ -13,11 +13,10 @@ __all__ = ['StatsClient', 'TCPStatsClient']
 class Timer(object):
     """A context manager/decorator for statsd.timing()."""
 
-    def __init__(self, client, stat, rate=1, tags=[]):
+    def __init__(self, client, stat, rate=1):
         self.client = client
         self.stat = stat
         self.rate = rate
-        self.tags = tags
         self.ms = None
         self._sent = False
         self._start_time = None
